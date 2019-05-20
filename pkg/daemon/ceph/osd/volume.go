@@ -98,15 +98,7 @@ func (a *OsdAgent) initializeDevices(context *clusterd.Context, devices *DeviceO
 		}
 	}
 
-	// When mixed hdd/ssd devices are given, ceph-volume configures db lv on the ssd.
-	metadataDeviceSpecified := false
-	if a.metadataDevice != "" {
-		logger.Infof("using %s as metadataDevice and let ceph-volume lvm batch decide how to create volumes", a.metadataDevice)
-		metadataDeviceSpecified = true
-		batchArgs = append(batchArgs, path.Join("/dev", a.metadataDevice))
-	}
-
-	configured := 0
+	metadataDevices := make(map[string][]string)
 	for name, device := range devices.Entries {
 		if device.LegacyPartitionsFound {
 			logger.Infof("skipping device %s configured with legacy rook osd", name)
@@ -116,12 +108,30 @@ func (a *OsdAgent) initializeDevices(context *clusterd.Context, devices *DeviceO
 		if device.Data == -1 {
 			logger.Infof("configuring new device %s", name)
 			deviceArg := path.Join("/dev", name)
-			if metadataDeviceSpecified {
+			var deviceClass string
+			if device.Config.DeviceClass != "" {
+				deviceClass = "--crush-device-class " + device.Config.DeviceClass
+			}
+
+			if a.metadataDevice != "" || device.Config.MetadataDevice != "" {
+				// When mixed hdd/ssd devices are given, ceph-volume configures db lv on the ssd.
 				// the device will be configured as a batch at the end of the method
-				batchArgs = append(batchArgs, deviceArg)
-				configured++
+				md := a.metadataDevice
+				if device.Config.MetadataDevice != "" {
+					md = device.Config.MetadataDevice
+				}
+				logger.Infof("using %s as metadataDevice for device %s and let ceph-volume lvm batch decide how to create volumes", md, deviceArg)
+				if _, ok := metadataDevices[md]; ok {
+					metadataDevices[md] = append(metadataDevices[md], []string{
+						deviceClass,
+						deviceArg,
+					}...)
+				} else {
+					metadataDevices[md] = []string{deviceClass, deviceArg}
+				}
 			} else {
 				immediateExecuteArgs := append(baseArgs, []string{
+					deviceClass,
 					deviceArg,
 					osdsPerDeviceFlag,
 					sanitizeOSDsPerDevice(device.Config.OSDsPerDevice),
@@ -145,7 +155,11 @@ func (a *OsdAgent) initializeDevices(context *clusterd.Context, devices *DeviceO
 		}
 	}
 
-	if configured > 0 {
+	for md, devs := range metadataDevices {
+
+		batchArgs = append(batchArgs, path.Join("/dev", md))
+		batchArgs = append(batchArgs, devs...)
+
 		// Reporting
 		reportArgs := append(batchArgs, []string{
 			"--report",
