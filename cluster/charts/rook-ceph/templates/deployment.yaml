@@ -26,6 +26,13 @@ spec:
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         args: ["ceph", "operator"]
+{{- if .Values.csi }}
+        volumeMounts:
+        - mountPath: /var/lib/rook
+          name: rook-config
+        - mountPath: /etc/ceph
+          name: default-config-dir
+{{- end }}
         env:
         - name: ROOK_CURRENT_NAMESPACE_ONLY
           value: "true"
@@ -81,6 +88,24 @@ spec:
         - name: ROOK_DISABLE_DEVICE_HOTPLUG
           value: {{ .Values.disableDeviceHotplug }}
 {{- end }}
+{{- if .Values.csi }}
+        - name: ROOK_CSI_ENABLE_CEPHFS
+          value: {{ .Values.csi.enable_cephfs | quote }}
+        - name: ROOK_CSI_CEPHFS_IMAGE
+          value: {{ .Values.csi.cephfs_image }}
+        - name: ROOK_CSI_ENABLE_RBD
+          value: {{ .Values.csi.enable_rbd | quote}}
+        - name: ROOK_CSI_RBD_IMAGE
+          value: {{ .Values.csi.rbd_image }}
+        - name: ROOK_CSI_REGISTRAR_IMAGE
+          value: {{ .Values.csi.registrar_image }}
+        - name: ROOK_CSI_PROVISIONER_IMAGE
+          value: {{ .Values.csi.provisioner_image }}
+        - name: ROOK_CSI_SNAPSHOTTER_IMAGE
+          value: {{ .Values.csi.snapshotter_image }}
+        - name: ROOK_CSI_ATTACHER_IMAGE
+          value: {{ .Values.csi.attacher_image }}
+{{- end }}
         - name: NODE_NAME
           valueFrom:
             fieldRef:
@@ -109,6 +134,13 @@ spec:
 {{- end }}
         resources:
 {{ toYaml .Values.resources | indent 10 }}
+{{- if .Values.csi }}
+      volumes:
+      - name: rook-config
+        emptyDir: {}
+      - name: default-config-dir
+        emptyDir: {}
+{{- end }}
 {{- if .Values.nodeSelector }}
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
