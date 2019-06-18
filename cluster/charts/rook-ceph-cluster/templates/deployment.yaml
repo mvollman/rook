@@ -1,0 +1,64 @@
+---
+apiVersion: ceph.rook.io/v1
+kind: CephCluster
+metadata:
+  name: rook-ceph-cluster
+  labels:
+spec:
+  cephVersion:
+    image: {{ .Values.cluster.cephVersion.image }}
+    allowUnsupported: false
+  dataDirHostPath: {{ .Values.cluster.dataDirHostPath }}
+  mon:
+    count: {{ .Values.cluster.mon.count }}
+    preferredCount: {{ .Values.cluster.mon.preferredCount }}
+    allowMultiplePerNode: {{ .Values.cluster.mon.allowMultiplePerNode }}
+{{- if .Values.cluster.placement }}
+  placement:
+    {{- if .Values.cluster.placement.all.nodeAffinity }}
+    all:
+      nodeAffinity:
+        {{ .Values.cluster.placement.all.nodeAffinity }}
+    {{- end }}
+    {{- if .Values.cluster.placement.mgr.nodeAffinity }}
+    mgr:
+      nodeAffinity:
+        {{ .Values.cluster.placement.mgr.nodeAffinity }}
+    {{- end }}
+    {{- if .Values.cluster.placement.mon.nodeAffinity }}
+    mon:
+      nodeAffinity:
+        {{ .Values.cluster.placement.mon.nodeAffinity }}
+    {{- end }}
+    {{- if .Values.cluster.placement.osd.nodeAffinity }}
+    osd:
+      nodeAffinity:
+        {{ .Values.cluster.placement.osd.nodeAffinity }}
+    {{- end }}
+  {{- end }}
+  dashboard:
+    enabled: {{ .Values.cluster.dashboard.enabled }}
+  network:
+    hostNetwork: {{ .Values.cluster.network.hostNetwork }}
+  rbdMirroring:
+    workers: {{ .Values.cluster.rbdMirroring.workers }}
+  storage:
+    useAllNodes: {{ .Values.cluster.storage.useAllNodes }}
+    useAllDevices: {{ .Values.cluster.storage.useAllDevices }}
+{{- if .Values.cluster.storage.deviceFilter }}
+    deviceFilter: {{ .Values.cluster.storage.deviceFilter }}
+{{- end }}
+{{- if .Values.cluster.storage.location }}
+    location: {{ .Values.cluster.storage.location }}
+{{- end }}
+{{- if .Values.cluster.storage.config }}
+    config:
+      databaseSizeMB: {{ .Values.cluster.storage.config.databaseSizeMB }}
+      journalSizeMB: {{ .Values.cluster.storage.config.journalSizeMB }}
+      walSizeMB: {{ .Values.cluster.storage.config.walSizeMB }}
+      encryptedDevice: {{ .Values.cluster.storage.config.encryptedDevice }}
+{{- end }}
+{{- if .Values.cluster.storage.nodes }}
+    nodes:
+{{ toYaml .Values.cluster.storage.nodes | indent 6 }}
+{{- end }}
