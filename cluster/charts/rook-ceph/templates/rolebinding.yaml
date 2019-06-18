@@ -79,8 +79,6 @@ subjects:
 {{- end }}
 {{- if .Values.csi }}
 ---
-<<<<<<< HEAD
-=======
 apiVersion: v1
 kind: ServiceAccount
 metadata:
