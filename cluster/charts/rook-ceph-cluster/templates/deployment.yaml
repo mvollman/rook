@@ -2,8 +2,8 @@
 apiVersion: ceph.rook.io/v1
 kind: CephCluster
 metadata:
-  name: rook-ceph-cluster
-  labels:
+  name: {{ .Release.Name }}
+  namespaces: {{ .Release.Namespace }}
 spec:
   cephVersion:
     image: {{ .Values.cluster.cephVersion.image }}
@@ -11,9 +11,8 @@ spec:
   dataDirHostPath: {{ .Values.cluster.dataDirHostPath }}
   mon:
     count: {{ .Values.cluster.mon.count }}
-    preferredCount: {{ .Values.cluster.mon.preferredCount }}
     allowMultiplePerNode: {{ .Values.cluster.mon.allowMultiplePerNode }}
-{{- if .Values.cluster.placement }}
+{{- if .Values.placement }}
   placement:
     {{- if .Values.cluster.placement.all.nodeAffinity }}
     all:
@@ -53,12 +52,18 @@ spec:
 {{- end }}
 {{- if .Values.cluster.storage.config }}
     config:
+      {{- if .Values.cluster.storage.config.databaseSize }}
       databaseSizeMB: {{ .Values.cluster.storage.config.databaseSizeMB }}
+      {{- end }}
+      {{- if .Values.storageGlobal.config.journalSizeMB }}
       journalSizeMB: {{ .Values.cluster.storage.config.journalSizeMB }}
+      {{- end }}
+      {{- if .Values.cluster.storage.config.walSizeMB }}
       walSizeMB: {{ .Values.cluster.storage.config.walSizeMB }}
+      {{- end }}
+      {{- if .Values.cluster.storage.config.encryptedDevice }}
       encryptedDevice: {{ .Values.cluster.storage.config.encryptedDevice }}
+      {{- end }}
 {{- end }}
-{{- if .Values.cluster.storage.nodes }}
     nodes:
 {{ toYaml .Values.cluster.storage.nodes | indent 6 }}
-{{- end }}
