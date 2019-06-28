@@ -2,18 +2,36 @@ cluster:
   cephVersion:
     image: ceph/ceph:v14.2.1-20190430
     allowUnsupported: false
+
   dataDirHostPath: /var/lib/rook
+
   mon:
     count: 3
     allowMultiplePerNode: false
+
   dashboard:
     enabled: true
+
   network:
     hostNetwork: false
+
   rbdMirroring:
     workers: 0
+
   annotations:
+
   resources:
+
   storage:
     useAllNodes: true
     useAllDevices: true
+
+pools:
+  - name: rbd
+    protection: replicated
+    protectionArgs:
+      size: 3
+
+storageClasses:
+  - name: rbd-ceph-csi
+    pool: rbd

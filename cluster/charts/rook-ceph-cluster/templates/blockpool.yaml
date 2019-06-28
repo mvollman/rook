@@ -1,0 +1,16 @@
+{{ $namespace := .Release.Namespace }}
+{{- range .Values.pools }}
+apiVersion: ceph.rook.io/v1
+kind: CephBlockPool
+metadata:
+  name: {{ .name }}
+  namespace: {{ $namespace }}
+spec:
+  failureDomain: {{ .failureDomain | default "host" }}
+  {{ .protection }}:
+  {{- range $key, $val := .protectionArgs }}
+    {{ $key }}: {{ $val }}
+  {{- end }}
+  deviceClass: {{ .deviceClass | default "hdd" }}
+---
+{{- end }}

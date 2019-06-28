@@ -1,0 +1,88 @@
+{{- $namespace := .Release.Namespace }}
+{{- range .Values.rgws }}
+#################################################################################################################
+# Create an object store with settings for replication in a production environment. A minimum of 3 hosts with
+# OSDs are required in this example.
+#  kubectl create -f object.yaml
+#################################################################################################################
+
+apiVersion: ceph.rook.io/v1
+kind: CephObjectStore
+metadata:
+  name: {{ .name }}
+  namespace: {{ $namespace }}
+spec:
+  # The pool spec used to create the metadata pools. Must use replication.
+  metadataPool:
+{{- if .metadataPool }}
+    failureDomain: {{ .metadataPool.failureDomain | default "host"}}
+{{- else }}
+    failureDomain: host
+{{- end }}
+    replicated:
+      size: 3
+  # The pool spec used to create the data pool. Can use replication or erasure coding.
+  dataPool:
+{{- if .dataPool }}
+    failureDomain: {{ .dataPool.failureDomain | default "host" }}
+{{- else }}
+    failureDomain: host
+{{- end }}
+    replicated:
+      size: 3
+  # The gaeteway service configuration
+  gateway:
+    # type of the gateway (s3)
+    type: {{ .gateway.type | default "s3" }}
+    # A reference to the secret in the rook namespace where the ssl certificate is stored
+    sslCertificateRef:
+    # The port that RGW pods will listen on (http)
+    port: {{ .gateway.port | default "80" }}
+    # The port that RGW pods will listen on (https). An ssl certificate is required.
+    securePort: {{ .gateway.securePort | default "" }}
+    # The number of pods in the rgw deployment
+    instances: {{ .gateway.instances | default "1" }}
+    # The affinity rules to apply to the rgw deployment or daemonset.
+    placement:
+    #  nodeAffinity:
+    #    requiredDuringSchedulingIgnoredDuringExecution:
+    #      nodeSelectorTerms:
+    #      - matchExpressions:
+    #        - key: role
+    #          operator: In
+    #          values:
+    #          - rgw-node
+    #  tolerations:
+    #  - key: rgw-node
+    #    operator: Exists
+    #  podAffinity:
+    #  podAntiAffinity:
+    # A key/value list of annotations
+    annotations:
+    #  key: value
+    resources:
+    # The requests and limits set here, allow the object store gateway Pod(s) to use half of one CPU core and 1 gigabyte of memory
+    #  limits:
+    #    cpu: "500m"
+    #    memory: "1024Mi"
+    #  requests:
+    #    cpu: "500m"
+    #    memory: "1024Mi"
+---
+{{- range .users }}
+#################################################################################################################
+# Create an object store user for access to the s3 endpoint.
+#  kubectl create -f object-user.yaml
+#################################################################################################################
+
+apiVersion: ceph.rook.io/v1
+kind: CephObjectStoreUser
+metadata:
+  name: {{ .name }}
+  namespace: {{ $namespace }}
+spec:
+  store: {{ .store }}
+  displayName: {{ .displayName | quote }}
+---
+{{- end }}
+{{- end }}

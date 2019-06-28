@@ -1,0 +1,36 @@
+cluster:
+  cephVersion:
+    image: ceph/ceph:v13
+    allowUnsupported: false
+
+  storage:
+    useAllNodes: false
+    useAllDevices: false
+    deviceFilter: '^vd[c-d]$'
+
+    nodes:
+      - name: "keph-osd-2"
+      - name: "keph-osd-3"
+      - name: "keph-osd-4"
+      - name: "keph-osd-5"
+    
+pools:
+  - name: rbd
+    protection: replicated
+    protectionArgs:
+      size: 3
+  - name: ecpool
+    protection: erasureCoded
+    protectionArgs:
+      dataChunks: 2
+      codingChunks: 1
+    failureDomain: osd
+
+rgws:
+  - name: my-rgw-cluster
+    gateway:
+      instances: 3
+    users:
+      - name: my-user
+        store: my-store
+        displayName: This is my store
