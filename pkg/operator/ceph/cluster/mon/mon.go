@@ -288,13 +288,13 @@ func (c *Cluster) ensureMonsRunning(mons []*monConfig, i, targetCount int, requi
 // If a new cluster, create new keys.
 func (c *Cluster) initClusterInfo(cephVersion cephver.CephVersion) error {
 	var err error
+
 	// get the cluster info from secret
 	c.clusterInfo, c.maxMonID, c.mapping, err = CreateOrLoadClusterInfo(c.context, c.Namespace, &c.ownerRef)
-	c.clusterInfo.CephVersion = cephVersion
-
 	if err != nil {
 		return fmt.Errorf("failed to get cluster info. %+v", err)
 	}
+	c.clusterInfo.CephVersion = cephVersion
 
 	// save cluster monitor config
 	if err = c.saveMonConfig(); err != nil {
@@ -459,7 +459,7 @@ func (c *Cluster) saveMonConfig() error {
 			Namespace: c.Namespace,
 		},
 	}
-	k8sutil.SetOwnerRef(c.context.Clientset, c.Namespace, &configMap.ObjectMeta, &c.ownerRef)
+	k8sutil.SetOwnerRef(&configMap.ObjectMeta, &c.ownerRef)
 
 	monMapping, err := json.Marshal(c.mapping)
 	if err != nil {
