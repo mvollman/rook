@@ -498,6 +498,12 @@ func (c *Cluster) provisionOSDContainer(devices []rookalpha.Device, selection ro
 				logger.Infof("%s osds requested on device %s (node %s)", count, device.Name, nodeName)
 			}
 			devSuffix += ":" + count
+			if deviceClass, ok := device.Config[config.DeviceClassKey]; ok {
+				logger.Infof("osd %s requested with deviceClass %s (node %s)", device.Name, deviceClass, nodeName)
+				devSuffix += ":" + deviceClass
+			} else {
+				devSuffix += ":auto"
+			}
 			if md, ok := device.Config[config.MetadataDeviceKey]; ok {
 				logger.Infof("osd %s requested with metadataDevice %s (node %s)", device.Name, md, nodeName)
 				devSuffix += ":" + md
